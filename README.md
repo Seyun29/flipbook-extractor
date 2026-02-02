@@ -5,6 +5,7 @@
 --> design with figma first
 --> make the frame to be fixed, the photos will be located inside the fixed square
 --> give options to choose (photo aspect ratio, square or 4:3)
+--> move the photo location to be slightly right
 - trim video functionality
 - Video upload -> Crop -> Extract to 20~40 frames at once --> edit = crop/trim both -> frames auto extracted at once
 - upload to google drive, progress bar ==> n8n & slack, cross check with google sheets DB (if Cx ordered)
