@@ -56,3 +56,35 @@
   margin-top: 20px;
   border-left: 4px solid #c33;
 }
+
+.crop-section {
+  margin-bottom: 20px;
+}
+
+.btn-crop {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s;
+  width: 100%;
+}
+
+.btn-crop:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.crop-status {
+  margin-top: 10px;
+  padding: 10px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}

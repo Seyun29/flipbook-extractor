@@ -2,11 +2,139 @@
   margin-top: 30px;
 }
 
-.gallery-container h2 {
-  color: #333;
+.gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
-  font-size: 20px;
+  gap: 15px;
+  flex-wrap: wrap;
 }
+
+.gallery-header h2 {
+  color: #333;
+  font-size: 20px;
+  margin: 0;
+}
+
+.gallery-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.preview-btn,
+.upload-drive-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s;
+}
+
+.preview-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.preview-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.upload-drive-btn {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.upload-drive-btn:hover:not(:disabled) {
+  background: #efefef;
+  border-color: #999;
+}
+
+.upload-drive-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Preview Mode */
+.preview-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.preview-container {
+  width: 50vw;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.book-flip-wrapper {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.book-flip-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.preview-info {
+  display: flex;
+  gap: 20px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.preview-timer {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 10px;
+  opacity: 0.8;
+}
+
+.exit-preview-btn {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: white;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.exit-preview-btn:hover {
+  background: #f0f0f0;
+}
+
+/* Gallery Grid */
 
 .frames-grid {
   display: grid;
@@ -17,7 +145,7 @@
 .frame-card {
   position: relative;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   background: #f5f5f5;
   transition: all 0.3s;

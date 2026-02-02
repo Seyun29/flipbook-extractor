@@ -1,10 +1,11 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import './VideoUploader.css'
 
 const MAX_DURATION = 120 // 2 minutes in seconds
 
 export default function VideoUploader({ onUpload, onError }) {
   const fileInputRef = useRef(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   const validateVideo = (file) => {
     // Check file type
@@ -58,6 +59,37 @@ export default function VideoUploader({ onUpload, onError }) {
     fileInputRef.current.value = ''
   }
 
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+
+    const files = e.dataTransfer.files
+    const file = files?.[0]
+    if (!file) return
+
+    if (!validateVideo(file)) {
+      return
+    }
+
+    const isValid = await checkVideoDuration(file)
+    if (isValid) {
+      onUpload(file)
+    }
+  }
+
   return (
     <div className="uploader-container">
       <input
@@ -68,9 +100,15 @@ export default function VideoUploader({ onUpload, onError }) {
         className="file-input"
         id="video-input"
       />
-      <label htmlFor="video-input" className="upload-label">
+      <label
+        htmlFor="video-input"
+        className={`upload-label ${isDragging ? 'dragging' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <div className="upload-icon">📹</div>
-        <p>Click to upload video</p>
+        <p>Click to upload or drag and drop</p>
         <span className="upload-hint">Max 2 minutes duration</span>
       </label>
     </div>
