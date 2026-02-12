@@ -5,7 +5,7 @@ export default function CropTool({ video, onCropApply, onCancel }) {
   const containerRef = useRef(null)
   const canvasRef = useRef(null)
   const videoElementRef = useRef(null)
-  const [fillColor, setFillColor] = useState('black')
+  const [fillColor, setFillColor] = useState('#e6dfda')
   const [scale, setScale] = useState(1)
   const [offsetX, setOffsetX] = useState(0)
   const [offsetY, setOffsetY] = useState(0)
@@ -14,9 +14,9 @@ export default function CropTool({ video, onCropApply, onCancel }) {
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
-  const CANVAS_WIDTH = 480
-  const CANVAS_HEIGHT = 360
-  const RATIO = 4 / 3
+  const CANVAS_WIDTH = 540
+  const CANVAS_HEIGHT = 420
+  const RATIO = 9 / 7
   const HANDLE_SIZE = 12
   const SNAP_DISTANCE = 15 // 스냅 거리
   const MIN_OPACITY = 0.15 // 최소 투명도
@@ -298,7 +298,7 @@ export default function CropTool({ video, onCropApply, onCancel }) {
   return (
     <div className="crop-tool-overlay">
       <div className="crop-tool-container">
-        <h2>Crop Video to 4:3 Ratio</h2>
+        <h2>Crop Video to 9:7 Ratio</h2>
         
         <div className="crop-preview-section">
           <canvas
@@ -323,18 +323,11 @@ export default function CropTool({ video, onCropApply, onCancel }) {
             <label>Fill Color</label>
             <div className="color-options">
               <button
-                className={`color-btn ${fillColor === 'black' ? 'active' : ''}`}
-                style={{ backgroundColor: 'black' }}
-                onClick={() => handleFillColorChange('black')}
+                className={`color-btn ${fillColor === '#e6dfda' ? 'active' : ''}`}
+                style={{ backgroundColor: '#e6dfda' }}
+                onClick={() => handleFillColorChange('#e6dfda')}
               >
-                Black
-              </button>
-              <button
-                className={`color-btn ${fillColor === 'white' ? 'active' : ''}`}
-                style={{ backgroundColor: 'white', color:'black', border: '2px solid #ccc' }}
-                onClick={() => handleFillColorChange('white')}
-              >
-                White
+                Beige
               </button>
             </div>
           </div>

@@ -43,7 +43,7 @@ export default function FrameGallery({ frames }) {
   const downloadFrame = (frame) => {
     const link = document.createElement('a')
     link.href = frame.url
-    link.download = `frame-${frame.index}.jpg`
+    link.download = `${frame.index}.png`
     link.click()
   }
 
@@ -68,7 +68,7 @@ export default function FrameGallery({ frames }) {
       for (const frame of frames) {
         const response = await fetch(frame.url)
         const blob = await response.blob()
-        zip.file(`${frame.index}.jpg`, blob)
+        zip.file(`${frame.index}.png`, blob)
       }
 
       // Generate zip and download
@@ -85,7 +85,7 @@ export default function FrameGallery({ frames }) {
   }
 
   if (isPreviewMode) {
-    const bgColor = frames[0]?.fillColor === 'black' ? '#ffffff' : '#000000'
+    const bgColor = frames[0]?.fillColor === '#e6dfda' ? '#e6dfda' : '#000000'
     
     return (
       <div className="preview-mode" style={{ backgroundColor: bgColor }}>

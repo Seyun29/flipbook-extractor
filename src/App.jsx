@@ -64,7 +64,7 @@ export default function App() {
                 className="btn-crop"
                 onClick={() => setShowCropTool(true)}
               >
-                ✂ Crop to 4:3 Ratio
+                ✂ Crop to 9:7 Ratio
               </button>
               {cropSettings && (
                 <div className="crop-status">

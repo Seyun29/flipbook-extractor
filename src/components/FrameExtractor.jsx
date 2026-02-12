@@ -28,10 +28,10 @@ export default function FrameExtractor({ video, onFramesExtracted, onError, crop
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
 
-      // Set canvas to 4:3 ratio if crop is applied
+      // Set canvas to 9:7 ratio if crop is applied
       if (cropSettings) {
-        canvas.width = 480
-        canvas.height = 360
+        canvas.width = 540
+        canvas.height = 420
       } else {
         canvas.width = videoElement.videoWidth
         canvas.height = videoElement.videoHeight
@@ -69,7 +69,7 @@ export default function FrameExtractor({ video, onFramesExtracted, onError, crop
               })
               setProgress(Math.round(((i + 1) / frameCount) * 100))
               resolve()
-            }, 'image/jpeg', 0.95)
+            }, 'image/png')
           }
         })
       }
