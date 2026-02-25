@@ -1,4 +1,4 @@
-# video-frame-extractor-FE-demo
+# Flipbook Extractor
 
 ## TODO
 - Apply "frame" and "margin"
