@@ -1,36 +1,54 @@
-import React, { useState, useRef } from 'react'
+import { useState } from 'react'
 import VideoUploader from './components/VideoUploader'
 import VideoMetadata from './components/VideoMetadata'
-import CropTool from './components/CropTool'
+import VideoEditor from './components/VideoEditor'
 import FrameExtractor from './components/FrameExtractor'
 import FrameGallery from './components/FrameGallery'
 import './App.css'
 
-export default function App() {
-  const [video, setVideo] = useState(null)
-  const [frames, setFrames] = useState([])
-  const [error, setError] = useState('')
-  const [showCropTool, setShowCropTool] = useState(false)
-  const [cropSettings, setCropSettings] = useState(null)
+export interface FrameData {
+  url: string;
+  timestamp: string;
+  index: number;
+  fillColor: string | null;
+}
 
-  const handleVideoUpload = (videoFile) => {
+export interface EditSettings {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  fillColor: string;
+  ratio: number;
+  trimStart: number;
+  trimEnd: number;
+}
+
+export default function App() {
+  const [video, setVideo] = useState<File | null>(null)
+  const [frames, setFrames] = useState<FrameData[]>([])
+  const [error, setError] = useState<string>('')
+  const [showVideoEditor, setShowVideoEditor] = useState<boolean>(false)
+  const [editSettings, setEditSettings] = useState<EditSettings | null>(null)
+
+  const handleVideoUpload = (videoFile: File) => {
     setVideo(videoFile)
     setFrames([])
     setError('')
-    setCropSettings(null)
+    setEditSettings(null)
   }
 
-  const handleError = (errorMsg) => {
+  const handleError = (errorMsg: string) => {
     setError(errorMsg)
   }
 
-  const handleFramesExtracted = (extractedFrames) => {
+  const handleFramesExtracted = (extractedFrames: FrameData[]) => {
     setFrames(extractedFrames)
   }
 
-  const handleCropApply = (settings) => {
-    setCropSettings(settings)
-    setShowCropTool(false)
+  const handleEditApply = (settings: EditSettings) => {
+    setEditSettings(settings)
+    setShowVideoEditor(false)
+    setFrames([]) // reset frames on edit update
   }
 
   return (
@@ -50,7 +68,7 @@ export default function App() {
                   setVideo(null)
                   setFrames([])
                   setError('')
-                  setCropSettings(null)
+                  setEditSettings(null)
                 }}
               >
                 Upload Different Video
@@ -62,13 +80,13 @@ export default function App() {
             <div className="crop-section">
               <button 
                 className="btn-crop"
-                onClick={() => setShowCropTool(true)}
+                onClick={() => setShowVideoEditor(true)}
               >
-                ✂ Crop to 9:7 Ratio
+                ✂ Edit & Crop Video
               </button>
-              {cropSettings && (
+              {editSettings && (
                 <div className="crop-status">
-                  ✓ Crop applied (Fill: {cropSettings.fillColor}, Scale: {cropSettings.scale.toFixed(2)}x)
+                  ✓ Edits applied (Trim: {editSettings.trimStart.toFixed(1)}s - {editSettings.trimEnd.toFixed(1)}s, Scale: {editSettings.scale.toFixed(2)}x)
                 </div>
               )}
             </div>
@@ -77,7 +95,7 @@ export default function App() {
               video={video} 
               onFramesExtracted={handleFramesExtracted}
               onError={handleError}
-              cropSettings={cropSettings}
+              editSettings={editSettings}
             />
             
             {frames.length > 0 && (
@@ -93,11 +111,12 @@ export default function App() {
         )}
       </div>
 
-      {showCropTool && (
-        <CropTool 
+      {showVideoEditor && video && (
+        <VideoEditor 
           video={video}
-          onCropApply={handleCropApply}
-          onCancel={() => setShowCropTool(false)}
+          initialSettings={editSettings}
+          onEditApply={handleEditApply}
+          onCancel={() => setShowVideoEditor(false)}
         />
       )}
     </div>

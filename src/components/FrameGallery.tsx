@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import JSZip from 'jszip'
 import './FrameGallery.css'
+import { FrameData } from '../App'
 
-export default function FrameGallery({ frames }) {
-  const [selectedFrame, setSelectedFrame] = useState(null)
+export interface FrameGalleryProps {
+  frames: FrameData[];
+}
+
+export default function FrameGallery({ frames }: FrameGalleryProps) {
+  const [selectedFrame, setSelectedFrame] = useState<FrameData | null>(null)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
@@ -40,7 +45,7 @@ export default function FrameGallery({ frames }) {
     return () => clearInterval(timer)
   }, [isPreviewMode, PREVIEW_DURATION])
 
-  const downloadFrame = (frame) => {
+  const downloadFrame = (frame: FrameData) => {
     const link = document.createElement('a')
     link.href = frame.url
     link.download = `${frame.index}.png`
@@ -80,7 +85,8 @@ export default function FrameGallery({ frames }) {
       link.click()
       URL.revokeObjectURL(url)
     } catch (err) {
-      alert('Failed to download frames: ' + err.message)
+      const msg = err instanceof Error ? err.message : String(err)
+      alert('Failed to download frames: ' + msg)
     }
   }
 

@@ -1,17 +1,33 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import './VideoMetadata.css'
 
-export default function VideoMetadata({ video }) {
-  const [metadata, setMetadata] = useState(null)
+export interface VideoMetadataProps {
+  video: File;
+}
+
+export interface MetadataInfo {
+  filename: string;
+  filesize: string;
+  type: string;
+  duration: string;
+  durationSeconds: number;
+  width: number;
+  height: number;
+  resolution: string;
+  aspectRatio: string;
+}
+
+export default function VideoMetadata({ video }: VideoMetadataProps) {
+  const [metadata, setMetadata] = useState<MetadataInfo | null>(null)
 
   useEffect(() => {
     const extractMetadata = async () => {
       const videoElement = document.createElement('video')
       videoElement.src = URL.createObjectURL(video)
 
-      await new Promise((resolve) => {
+      await new Promise<void>((resolve) => {
         videoElement.onloadedmetadata = () => {
-          const data = {
+          const data: MetadataInfo = {
             filename: video.name,
             filesize: formatFileSize(video.size),
             type: video.type || 'Unknown',
@@ -31,7 +47,7 @@ export default function VideoMetadata({ video }) {
     extractMetadata()
   }, [video])
 
-  const formatFileSize = (bytes) => {
+  const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
@@ -39,7 +55,7 @@ export default function VideoMetadata({ video }) {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
 
-  const formatDuration = (seconds) => {
+  const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
     const secs = Math.floor(seconds % 60)

@@ -1,13 +1,18 @@
-import React, { useRef, useState } from 'react'
+import { useRef, useState, DragEvent, ChangeEvent } from 'react'
 import './VideoUploader.css'
 
 const MAX_DURATION = 120 // 2 minutes in seconds
 
-export default function VideoUploader({ onUpload, onError }) {
-  const fileInputRef = useRef(null)
+export interface VideoUploaderProps {
+  onUpload: (file: File) => void;
+  onError: (msg: string) => void;
+}
+
+export default function VideoUploader({ onUpload, onError }: VideoUploaderProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
-  const validateVideo = (file) => {
+  const validateVideo = (file: File) => {
     // Check file type
     if (!file.type.startsWith('video/')) {
       onError('Please upload a valid video file')
@@ -24,8 +29,8 @@ export default function VideoUploader({ onUpload, onError }) {
     return true
   }
 
-  const checkVideoDuration = (file) => {
-    return new Promise((resolve) => {
+  const checkVideoDuration = (file: File) => {
+    return new Promise<boolean>((resolve) => {
       const video = document.createElement('video')
       video.onloadedmetadata = () => {
         if (video.duration > MAX_DURATION) {
@@ -43,12 +48,12 @@ export default function VideoUploader({ onUpload, onError }) {
     })
   }
 
-  const handleFileChange = async (e) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     if (!validateVideo(file)) {
-      fileInputRef.current.value = ''
+      if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
 
@@ -56,22 +61,22 @@ export default function VideoUploader({ onUpload, onError }) {
     if (isValid) {
       onUpload(file)
     }
-    fileInputRef.current.value = ''
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(true)
   }
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = (e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
   }
 
-  const handleDrop = async (e) => {
+  const handleDrop = async (e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)

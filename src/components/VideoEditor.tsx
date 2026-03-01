@@ -1,24 +1,35 @@
-import React, { useState, useRef, useEffect } from 'react'
-import './CropTool.css'
+import { useState, useRef, useEffect, MouseEvent, TouchEvent, WheelEvent } from 'react'
+import './VideoEditor.css'
+import { EditSettings } from '../App'
 
-export default function CropTool({ video, onCropApply, onCancel }) {
-  const containerRef = useRef(null)
-  const canvasRef = useRef(null)
-  const videoElementRef = useRef(null)
-  const [fillColor, setFillColor] = useState('#e6dfda')
-  const [scale, setScale] = useState(1)
-  const [offsetX, setOffsetX] = useState(0)
-  const [offsetY, setOffsetY] = useState(0)
+export interface VideoEditorProps {
+  video: File;
+  initialSettings: EditSettings | null;
+  onEditApply: (settings: EditSettings) => void;
+  onCancel: () => void;
+}
+
+export default function VideoEditor({ video, initialSettings, onEditApply, onCancel }: VideoEditorProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const videoElementRef = useRef<HTMLVideoElement | null>(null)
+  const [fillColor, setFillColor] = useState(initialSettings?.fillColor ?? '#ffffff')
+  const [scale, setScale] = useState(initialSettings?.scale ?? 1)
+  const [offsetX, setOffsetX] = useState(initialSettings?.offsetX ?? 0)
+  const [offsetY, setOffsetY] = useState(initialSettings?.offsetY ?? 0)
+  const [trimStart, setTrimStart] = useState(initialSettings?.trimStart ?? 0)
+  const [trimEnd, setTrimEnd] = useState(initialSettings?.trimEnd ?? 0)
+  const [videoDuration, setVideoDuration] = useState(0)
   const [videoWidth, setVideoWidth] = useState(0)
   const [videoHeight, setVideoHeight] = useState(0)
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [thumbnails, setThumbnails] = useState<string[]>([])
+  const trackRef = useRef<HTMLDivElement>(null)
+  const isDraggingTrim = useRef<'start' | 'end' | null>(null)
 
-  const CANVAS_WIDTH = 540
-  const CANVAS_HEIGHT = 420
-  const RATIO = 9 / 7
-  const HANDLE_SIZE = 12
-  const SNAP_DISTANCE = 15 // 스냅 거리
+  const CANVAS_WIDTH = 640
+  const CANVAS_HEIGHT = 480
+  const RATIO = 4 / 3
   const MIN_OPACITY = 0.15 // 최소 투명도
 
   useEffect(() => {
@@ -26,18 +37,61 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     videoElement.src = URL.createObjectURL(video)
     
     videoElement.onloadedmetadata = () => {
+      const dur = videoElement.duration
+      setVideoDuration(dur)
+      if (!initialSettings && trimEnd === 0) {
+        setTrimEnd(dur)
+      }
       setVideoWidth(videoElement.videoWidth)
       setVideoHeight(videoElement.videoHeight)
       videoElementRef.current = videoElement
-      drawPreview(videoElement, 1, 0, 0, false)
+      // Seek to a small offset to reliably trigger frame decoding if start is 0
+      videoElement.currentTime = initialSettings?.trimStart ?? 0.1
+
+      generateThumbnails(dur, videoElement)
+    }
+
+    videoElement.onseeked = () => {
+        drawPreview(videoElement, 1, 0, 0, false)
+    }
+
+    const generateThumbnails = async (dur: number, sourceVideo: HTMLVideoElement) => {
+      const count = 8
+      const interval = dur / count
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      
+      // small canvas for thumbnails
+      canvas.width = sourceVideo.videoWidth / 4
+      canvas.height = sourceVideo.videoHeight / 4
+
+      // Create a separate video element for extracting to not mess with the preview seeked
+      const tempVideo = document.createElement('video')
+      tempVideo.src = sourceVideo.src
+      await new Promise(r => { tempVideo.onloadedmetadata = r })
+
+      const urls: string[] = []
+      for (let i = 0; i < count; i++) {
+        tempVideo.currentTime = i * interval
+        await new Promise<void>((resolve) => {
+          tempVideo.onseeked = () => {
+            ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height)
+            urls.push(canvas.toDataURL('image/jpeg', 0.5))
+            resolve()
+          }
+        })
+      }
+      setThumbnails(urls)
     }
   }, [video])
 
-  const drawPreview = (videoElement, scaleVal, offsetXVal, offsetYVal, isMoving = false) => {
+  const drawPreview = (videoElement: HTMLVideoElement, scaleVal: number, offsetXVal: number, offsetYVal: number, isMoving = false) => {
     const canvas = canvasRef.current
     if (!canvas) return
 
     const ctx = canvas.getContext('2d')
+    if (!ctx) return
     ctx.fillStyle = fillColor
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
@@ -52,10 +106,10 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     drawRoundedRect(ctx, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 12, '#667eea', 2)
 
     // Draw center guidelines
-    drawGuidelines(ctx, x, y, scaledWidth, scaledHeight, offsetXVal, offsetYVal, isMoving)
+    drawGuidelines(ctx, x, y, scaledWidth, scaledHeight, isMoving)
   }
 
-  const drawRoundedRect = (ctx, x, y, width, height, radius, strokeColor, lineWidth) => {
+  const drawRoundedRect = (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number, strokeColor: string, lineWidth: number) => {
     ctx.strokeStyle = strokeColor
     ctx.lineWidth = lineWidth
     
@@ -81,7 +135,7 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     }
   }
 
-  const drawGuidelines = (ctx, videoX, videoY, videoWidth, videoHeight, offsetXVal, offsetYVal, isMoving) => {
+  const drawGuidelines = (ctx: CanvasRenderingContext2D, videoX: number, videoY: number, videoWidth: number, videoHeight: number, isMoving: boolean) => {
     const centerX = CANVAS_WIDTH / 2
     const centerY = CANVAS_HEIGHT / 2
     const videoCenterX = videoX + videoWidth / 2
@@ -119,40 +173,15 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     ctx.setLineDash([])
   }
 
-  const drawOffsetInfo = (ctx, videoX, videoY, videoCenterX, videoCenterY) => {
-    // Removed - keeping canvas clean
-  }
 
-  const drawHandles = (ctx) => {
-    const handles = [
-      { x: 0, y: 0 },
-      { x: CANVAS_WIDTH / 2, y: 0 },
-      { x: CANVAS_WIDTH, y: 0 },
-      { x: CANVAS_WIDTH, y: CANVAS_HEIGHT / 2 },
-      { x: CANVAS_WIDTH, y: CANVAS_HEIGHT },
-      { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT },
-      { x: 0, y: CANVAS_HEIGHT },
-      { x: 0, y: CANVAS_HEIGHT / 2 }
-    ]
 
-    handles.forEach((handle) => {
-      ctx.fillStyle = '#667eea'
-      ctx.fillRect(
-        handle.x - HANDLE_SIZE / 2,
-        handle.y - HANDLE_SIZE / 2,
-        HANDLE_SIZE,
-        HANDLE_SIZE
-      )
-    })
-  }
-
-  const updatePreview = (newScale, newOffsetX, newOffsetY) => {
+  const updatePreview = (newScale: number, newOffsetX: number, newOffsetY: number) => {
     if (videoElementRef.current) {
       drawPreview(videoElementRef.current, newScale, newOffsetX, newOffsetY, isDraggingImage)
     }
   }
 
-  const handleCanvasWheel = (e) => {
+  const handleCanvasWheel = (e: WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault()
     e.stopPropagation()
     const delta = e.deltaY > 0 ? -0.05 : 0.05
@@ -161,8 +190,8 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     updatePreview(newScale, offsetX, offsetY)
   }
 
-  const getCanvasCoordinates = (clientX, clientY) => {
-    const rect = canvasRef.current.getBoundingClientRect()
+  const getCanvasCoordinates = (clientX: number, clientY: number) => {
+    const rect = canvasRef.current!.getBoundingClientRect()
     const scaleX = CANVAS_WIDTH / rect.width
     const scaleY = CANVAS_HEIGHT / rect.height
     const x = (clientX - rect.left) * scaleX
@@ -170,14 +199,14 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     return { x, y }
   }
 
-  const handleCanvasMouseDown = (e) => {
+  const handleCanvasMouseDown = (e: MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault()
     const { x, y } = getCanvasCoordinates(e.clientX, e.clientY)
     setIsDraggingImage(true)
     setDragStart({ x, y })
   }
 
-  const handleCanvasMouseMove = (e) => {
+  const handleCanvasMouseMove = (e: MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !isDraggingImage) return
 
     const { x, y } = getCanvasCoordinates(e.clientX, e.clientY)
@@ -221,8 +250,8 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     setIsDraggingImage(false)
   }
 
-  const handleTouchStart = (e) => {
-    if (e.touches.length === 1) {
+  const handleTouchStart = (e: TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1 && canvasRef.current) {
       const touch = e.touches[0]
       const rect = canvasRef.current.getBoundingClientRect()
       const x = touch.clientX - rect.left
@@ -241,8 +270,8 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     }
   }
 
-  const handleTouchMove = (e) => {
-    if (e.touches.length === 1) {
+  const handleTouchMove = (e: TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1 && canvasRef.current) {
       const touch = e.touches[0]
       const rect = canvasRef.current.getBoundingClientRect()
       const x = touch.clientX - rect.left
@@ -280,25 +309,61 @@ export default function CropTool({ video, onCropApply, onCancel }) {
     setIsDraggingImage(false)
   }
 
-  const handleFillColorChange = (color) => {
+  const handleFillColorChange = (color: string) => {
     setFillColor(color)
     updatePreview(scale, offsetX, offsetY)
   }
 
+  const handleTrimPointerDown = (type: 'start' | 'end') => (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    isDraggingTrim.current = type
+    if (trackRef.current) {
+      trackRef.current.setPointerCapture(e.pointerId)
+    }
+  }
+
+  const handleTrimPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingTrim.current || !trackRef.current || videoDuration === 0) return
+    const rect = trackRef.current.getBoundingClientRect()
+    let percentage = (e.clientX - rect.left) / rect.width
+    percentage = Math.max(0, Math.min(1, percentage))
+    const time = percentage * videoDuration
+
+    if (isDraggingTrim.current === 'start') {
+      const newVal = Math.min(time, trimEnd - 0.1)
+      setTrimStart(newVal)
+      if (videoElementRef.current) videoElementRef.current.currentTime = newVal
+    } else {
+      const newVal = Math.max(time, trimStart + 0.1)
+      setTrimEnd(newVal)
+      if (videoElementRef.current) videoElementRef.current.currentTime = newVal
+    }
+  }
+
+  const handleTrimPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDraggingTrim.current && trackRef.current) {
+      trackRef.current.releasePointerCapture(e.pointerId)
+    }
+    isDraggingTrim.current = null
+  }
+
   const handleApply = () => {
-    onCropApply({
+    onEditApply({
       scale,
       offsetX,
       offsetY,
       fillColor,
-      ratio: RATIO
+      ratio: RATIO,
+      trimStart,
+      trimEnd
     })
   }
 
   return (
     <div className="crop-tool-overlay">
       <div className="crop-tool-container">
-        <h2>Crop Video to 9:7 Ratio</h2>
+        <h2>Crop Video to 4:3 Ratio</h2>
         
         <div className="crop-preview-section">
           <canvas
@@ -323,12 +388,55 @@ export default function CropTool({ video, onCropApply, onCancel }) {
             <label>Fill Color</label>
             <div className="color-options">
               <button
-                className={`color-btn ${fillColor === '#e6dfda' ? 'active' : ''}`}
-                style={{ backgroundColor: '#e6dfda' }}
-                onClick={() => handleFillColorChange('#e6dfda')}
+                className={`color-btn ${fillColor === '#ffffff' ? 'active' : ''}`}
+                style={{ backgroundColor: '#ffffff', color: '#333', border: '1px solid #ccc' }}
+                onClick={() => handleFillColorChange('#ffffff')}
               >
-                Beige
+                White
               </button>
+            </div>
+          </div>
+
+          <div className="control-group">
+            <label>Trim Video ({trimStart.toFixed(1)}s - {trimEnd.toFixed(1)}s)</label>
+            <div 
+              className="trim-track-container" 
+              ref={trackRef}
+              onPointerMove={handleTrimPointerMove}
+              onPointerUp={handleTrimPointerUp}
+              onPointerCancel={handleTrimPointerUp}
+            >
+              <div className="trim-thumbnails">
+                {thumbnails.length > 0 ? (
+                  thumbnails.map((url, i) => (
+                    <div key={i} className="trim-thumbnail" style={{ backgroundImage: `url(${url})` }} />
+                  ))
+                ) : (
+                  <div className="trim-loading">Generating preview...</div>
+                )}
+              </div>
+              
+              {/* Unselected areas dark overlays */}
+              <div className="trim-overlay left" style={{ width: `${(trimStart / videoDuration) * 100}%` }} />
+              <div className="trim-overlay right" style={{ width: `${(1 - trimEnd / videoDuration) * 100}%` }} />
+              
+              {/* Active selection border */}
+              <div 
+                className="trim-selection" 
+                style={{ 
+                  left: `${(trimStart / videoDuration) * 100}%`,
+                  right: `${(1 - trimEnd / videoDuration) * 100}%` 
+                }}
+              >
+                <div 
+                  className="trim-handle start" 
+                  onPointerDown={handleTrimPointerDown('start')} 
+                />
+                <div 
+                  className="trim-handle end" 
+                  onPointerDown={handleTrimPointerDown('end')} 
+                />
+              </div>
             </div>
           </div>
 
